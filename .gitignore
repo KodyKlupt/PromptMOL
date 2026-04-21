@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# PromptMol config (contains API keys)
+~/.promptmol.json
+
+# Generated scripts and logs
+promptmol_*.py
+promptmol_scripts/
+retro_save.py
+*_session_*.py
+
+# Downloaded structure files
+*.cif
+*.pdb
+*.pse
+
+# Claude Code internals
+.claude/
+
+# macOS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+
+todo.txt
+
