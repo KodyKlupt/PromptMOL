@@ -3,7 +3,11 @@ PromptMol — natural-language PyMOL assistant.
 
 Commands registered in the PyMOL command line:
   pm [--dry] [--save [filename]] [--outdir /path] <prompt>
-  pmcfg set <key> <value>                   configure backend/model/api_key/output_dir
+  pmsetup                                   interactive first-run setup wizard
+  pmsetup lmstudio                          configure LM Studio backend
+  pmsetup openai <api_key>                  configure OpenAI backend
+  pmsetup anthropic <api_key>               configure Anthropic backend
+  pmcfg set <key> <value>                   configure any individual setting
   pmcfg show                                print current config
   pmreset                                   clear conversation history and log
   pmsave [filename]                         save last generated script
@@ -21,12 +25,19 @@ _LAST_SCRIPT: Optional[str] = None  # stores last generated code block
 
 def __init_plugin__(app=None):
     from pymol import cmd
+    from . import config
     cmd.extend("pm", _pm)
     cmd.extend("pmcfg", _pmcfg)
     cmd.extend("pmreset", _pmreset)
     cmd.extend("pmsave", _pmsave)
     cmd.extend("pmlog", _pmlog)
-    print("PromptMol loaded. Type 'pm help' for usage.")
+    cmd.extend("pmsetup", _pmsetup)
+
+    # First-run detection: show setup wizard if no config file exists yet
+    if not os.path.exists(config.CONFIG_PATH):
+        _print_setup_wizard(first_run=True)
+    else:
+        print("PromptMol loaded. Type 'pm help' for usage or 'pmsetup' to reconfigure.")
 
 
 # ---------------------------------------------------------------------------
@@ -172,6 +183,120 @@ def _looks_like_filename(s: str) -> bool:
     return "." in s and len(s.split()) == 1
 
 
+# ---------------------------------------------------------------------------
+# pmsetup command
+# ---------------------------------------------------------------------------
+
+def _pmsetup(*args, **kwargs):
+    """pmsetup | pmsetup lmstudio | pmsetup openai <key> | pmsetup anthropic <key>"""
+    from . import config
+
+    args = " ".join(str(a) for a in args).split()
+
+    if not args:
+        _print_setup_wizard(first_run=False)
+        return
+
+    backend = args[0].lower()
+
+    if backend == "lmstudio":
+        config.save_config("backend", "lmstudio")
+        print("")
+        print("  PromptMol: backend set to LM Studio (local)")
+        print("")
+        print("  Make sure LM Studio is running with a model loaded.")
+        print(f"  Server URL: {config.get('base_url')}")
+        print("")
+        print("  Optional tweaks:")
+        print("    pmcfg set model <model-name>        set the model name if needed")
+        print("    pmcfg set base_url <url>            change server URL (default: localhost:1234)")
+        print("")
+        print("  Setup complete! Try:  pm fetch 1hpv and show as cartoon colored by chain")
+        return
+
+    if backend == "openai":
+        api_key = args[1] if len(args) > 1 else ""
+        config.save_config("backend", "openai")
+        if api_key:
+            config.save_config("api_key", api_key)
+            print("")
+            print("  PromptMol: backend set to OpenAI, API key saved.")
+            print(f"  Model: {config.get('openai_model')} (change with: pmcfg set openai_model <name>)")
+            print("")
+            print("  Setup complete! Try:  pm fetch 1hpv and show as cartoon colored by chain")
+        else:
+            print("")
+            print("  PromptMol: backend set to OpenAI.")
+            print("  Enter your API key:")
+            print("")
+            print("    pmsetup openai <your-api-key>")
+            print("")
+            print("  Get a key at: https://platform.openai.com/api-keys")
+        return
+
+    if backend == "anthropic":
+        api_key = args[1] if len(args) > 1 else ""
+        config.save_config("backend", "anthropic")
+        if api_key:
+            config.save_config("api_key", api_key)
+            print("")
+            print("  PromptMol: backend set to Anthropic, API key saved.")
+            print(f"  Model: {config.get('anthropic_model')} (change with: pmcfg set anthropic_model <name>)")
+            print("")
+            print("  Setup complete! Try:  pm fetch 1hpv and show as cartoon colored by chain")
+        else:
+            print("")
+            print("  PromptMol: backend set to Anthropic.")
+            print("  Enter your API key:")
+            print("")
+            print("    pmsetup anthropic <your-api-key>")
+            print("")
+            print("  Get a key at: https://console.anthropic.com/settings/keys")
+        return
+
+    print(f"  Unknown backend '{backend}'. Choose: lmstudio, openai, anthropic")
+    _print_setup_wizard(first_run=False)
+
+
+def _print_setup_wizard(first_run: bool = False):
+    from . import config
+    cfg = config.load_config()
+    current = cfg.get("backend", "lmstudio")
+
+    if first_run:
+        print("")
+        print("  ╔══════════════════════════════════════════════════╗")
+        print("  ║           Welcome to PromptMol!                  ║")
+        print("  ║  Natural-language control for PyMOL              ║")
+        print("  ╚══════════════════════════════════════════════════╝")
+        print("")
+        print("  First-time setup — choose your LLM backend:")
+    else:
+        print("")
+        print("  PromptMol Setup  (current backend: {})".format(current))
+        print("  " + "─" * 48)
+        print("")
+        print("  Choose a backend:")
+
+    print("")
+    print("  1. LM Studio  — local model, no API key needed (recommended)")
+    print("")
+    print("       pmsetup lmstudio")
+    print("")
+    print("  2. OpenAI  — GPT-4o, requires API key")
+    print("")
+    print("       pmsetup openai <your-api-key>")
+    print("")
+    print("  3. Anthropic  — Claude, requires API key")
+    print("")
+    print("       pmsetup anthropic <your-api-key>")
+    print("")
+    print("  ─────────────────────────────────────────────────────")
+    print("  Type 'pmsetup' at any time to return to this screen.")
+    print("  Type 'pmcfg show' to view all current settings.")
+    print("")
+
+
 def _print_help():
     print(
         "PromptMol usage:\n"
@@ -181,6 +306,12 @@ def _print_help():
         "  pm --save file.py <prompt>         execute and save to file.py\n"
         "  pm --outdir /path <prompt>         set output folder for this command\n"
         "  pm --dry --save --outdir /p <p>    combine flags freely\n"
+        "\n"
+        "  pmsetup                            show backend setup wizard\n"
+        "  pmsetup lmstudio                   switch to LM Studio (local)\n"
+        "  pmsetup openai <key>               switch to OpenAI + set API key\n"
+        "  pmsetup anthropic <key>            switch to Anthropic + set API key\n"
+        "\n"
         "  pmcfg show                         show current config\n"
         "  pmcfg set output_dir /path         set persistent output folder\n"
         "  pmcfg set <key> <value>            set any config value\n"
