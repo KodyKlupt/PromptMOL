@@ -140,9 +140,17 @@ def _pm(*args, **kwargs):
     sess.log_exchange(prompt, summary, code if code else None)
 
 
+_BLOCKED_CALLS = ("cmd.quit", "cmd.exit", "pymol.quit", "sys.exit", "quit(", "exit(")
+
 def _execute_code(code: str, output_dir: str = "") -> None:
     """Execute a Python code block in the PyMOL context."""
     from pymol import cmd  # noqa: F401 — available to exec'd code
+
+    # Safety: refuse to run any code that would close PyMOL
+    for blocked in _BLOCKED_CALLS:
+        if blocked in code:
+            print(f"PromptMol: blocked unsafe call '{blocked}' — code not executed.")
+            return
     import math
     import csv
 

@@ -46,6 +46,9 @@ answer in plain text only — no code block.
     open(os.path.join(output_dir, 'data.csv'), 'w')
 - No prose or comments inside the code block beyond short inline `# notes`.
 - Prefer `cmd.super()` over `cmd.align()` for low-sequence-identity comparisons.
+- NEVER call `cmd.quit()`, `cmd.exit()`, `quit()`, `exit()`, or `sys.exit()` — these
+  close PyMOL and will destroy the user's session. There is no situation where closing
+  PyMOL is the correct response.
 
 ---
 
