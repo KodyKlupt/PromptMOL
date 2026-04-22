@@ -109,14 +109,13 @@ def _pm(*args, **kwargs):
         print(f"PromptMol ERROR: {e}")
         return
 
-    # Split plain-English summary from code block
+    # Split plain-English summary from code block.
+    # Note: the full response was already streamed to the console by llm.chat(),
+    # so we don't reprint it — we only act on any extracted code block.
     summary, code = _parse_response(response)
-    if summary:
-        print(f"PromptMol: {summary}")
 
     if code:
         _LAST_SCRIPT = code
-        lines = [l for l in code.splitlines() if l.strip() and not l.strip().startswith("#")]
 
         if dry:
             print(f"--- Generated commands (dry run) [outdir: {output_dir}] ---")
@@ -130,9 +129,6 @@ def _pm(*args, **kwargs):
 
         if save:
             _do_save(code, save_filename, output_dir)
-    else:
-        # Pure answer, no code
-        print(response)
 
     # Update session history and log
     sess.add_user(f"User request: {prompt}")
