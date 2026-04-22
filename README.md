@@ -37,40 +37,37 @@ Supports [LM Studio](https://lmstudio.ai) (local, no API key needed), OpenAI, an
 
 ## Installation
 
-### 1. Install Python dependencies
+### 1. Install PromptMol
 
-Install into the same Python environment that PyMOL uses:
-
-```bash
-pip install openai anthropic
-```
-
-If you installed PyMOL via conda:
+Activate the same conda environment that PyMOL uses, then install directly from GitHub:
 
 ```bash
 conda activate pymol
-pip install openai anthropic
+pip install git+https://github.com/KodyKlupt/PromptMOL.git
 ```
 
-### 2. Install the plugin
+This installs PromptMol and its dependencies (`openai`, `anthropic`) in one step.
 
-**Option A — PyMOL Plugin Manager (recommended)**
+To update to the latest version later:
 
-In PyMOL: `Plugin → Plugin Manager → Install New Plugin → Choose file...`
-Select the `promptmol/` folder.
+```bash
+pip install --upgrade git+https://github.com/KodyKlupt/PromptMOL.git
+```
 
-**Option B — Startup script**
+### 2. Load the plugin in PyMOL
 
-Add these lines to `~/.pymolrc` (create if it doesn't exist):
+Add these two lines to `~/.pymolrc` (create the file if it doesn't exist):
 
 ```python
-import sys
-sys.path.insert(0, '/path/to/parent/of/promptmol')
 import promptmol
 promptmol.__init_plugin__()
 ```
 
-Replace `/path/to/parent/of/promptmol` with the directory that *contains* the `promptmol/` folder.
+PyMOL will load PromptMol automatically every time it starts. To verify it worked, open PyMOL and type:
+
+```
+pm help
+```
 
 ---
 
