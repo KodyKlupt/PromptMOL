@@ -386,7 +386,6 @@ def _print_help() -> None:
         "\n"
         "  pmcfg show                         show current config\n"
         "  pmcfg set output_dir /path         set persistent output folder\n"
-        "  pmcfg set temperature 0.1          set LLM sampling temperature\n"
         "  pmcfg set <key> <value>            set any config value\n"
         "  pmreset                            clear conversation history and log\n"
         "  pmsave [file.py]                   save last generated script\n"
@@ -418,7 +417,7 @@ def _pmcfg(*args, **kwargs):
         key, value = tokens[1], " ".join(tokens[2:])
         valid_keys = {
             "backend", "model", "api_key", "base_url", "max_history",
-            "anthropic_model", "openai_model", "output_dir", "temperature",
+            "anthropic_model", "openai_model", "output_dir",
         }
         if key not in valid_keys:
             print(f"Unknown config key '{key}'. Valid keys: {', '.join(sorted(valid_keys))}")

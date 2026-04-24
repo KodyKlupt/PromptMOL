@@ -47,7 +47,6 @@ def _openai_chat(
         raise RuntimeError("openai package not installed. Run: pip install openai")
 
     backend = cfg.get("backend", "lmstudio")
-    temperature = float(cfg.get("temperature", 0.1))
 
     if backend == "lmstudio":
         base_url = cfg.get("base_url", "http://localhost:1234/v1")
@@ -67,7 +66,7 @@ def _openai_chat(
         stream = client.chat.completions.create(
             model=model,
             messages=messages,
-            temperature=temperature,
+            temperature=0.1,
             max_tokens=2048,
             stream=True,
         )

@@ -163,7 +163,6 @@ pmcfg set anthropic_model claude-sonnet-4-6
 pmcfg set base_url http://localhost:1234/v1   LM Studio server URL
 pmcfg set output_dir ~/my/figures    persistent output folder
 pmcfg set max_history 20             number of conversation turns to keep
-pmcfg set temperature 0.1            LLM sampling temperature
 ```
 
 Config is saved to `~/.promptmol.json`.
