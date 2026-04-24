@@ -11,7 +11,8 @@ DEFAULTS = {
     "max_history": 20,
     "anthropic_model": "claude-sonnet-4-6",
     "openai_model": "gpt-4o",
-    "output_dir": "",  # empty = use current working directory
+    "output_dir": "",   # empty = use current working directory
+    "temperature": 0.1,
 }
 
 
@@ -27,8 +28,10 @@ def load_config() -> dict:
 
 def save_config(key: str, value: str) -> None:
     config = load_config()
-    if key in ("max_history",):
+    if key == "max_history":
         config[key] = int(value)
+    elif key == "temperature":
+        config[key] = float(value)
     else:
         config[key] = value
     with open(CONFIG_PATH, "w") as f:

@@ -133,9 +133,21 @@ pm --dry <prompt>                    preview commands without executing
 pm --save <prompt>                   execute and save script (auto-named)
 pm --save filename.py <prompt>       execute and save to filename.py
 pm --outdir /path <prompt>           set output folder for this command
+pm --model <name> <prompt>           override LLM model for this one command
 pm --dry --save --outdir /p <prompt> combine flags freely
 pm help                              show usage
 ```
+
+If generated code raises an error, PromptMol automatically sends the error
+back to the LLM and retries once.
+
+### `pmundo` — undo last command
+
+```
+pmundo                               restore scene to before the last pm command
+```
+
+The scene state is snapshotted automatically before each execution.
 
 ### `pmcfg` — configuration
 
@@ -151,6 +163,7 @@ pmcfg set anthropic_model claude-sonnet-4-6
 pmcfg set base_url http://localhost:1234/v1   LM Studio server URL
 pmcfg set output_dir ~/my/figures    persistent output folder
 pmcfg set max_history 20             number of conversation turns to keep
+pmcfg set temperature 0.1            LLM sampling temperature
 ```
 
 Config is saved to `~/.promptmol.json`.
@@ -158,7 +171,7 @@ Config is saved to `~/.promptmol.json`.
 ### `pmreset` — clear session
 
 ```
-pmreset                              clear conversation history and session log
+pmreset                              clear conversation history, log, and undo state
 ```
 
 ### `pmsave` — save last script
@@ -174,9 +187,13 @@ pmsave filename.py                   save with a specific name
 pmlog show                           print full session log to console
 pmlog save                           save session as annotated .py script (auto-named)
 pmlog save session.py                save with a specific name
+pmlog export                         export session as JSON (auto-named)
+pmlog export session.json            export with a specific name
 ```
 
-The session log is a valid Python script with each step labeled by timestamp and prompt, so it can be replayed directly in PyMOL.
+The session log is a valid Python script with each step labeled by timestamp
+and prompt, so it can be replayed directly in PyMOL. The JSON export is useful
+for programmatic analysis or sharing structured session data.
 
 ---
 
@@ -210,10 +227,11 @@ Scripts saved by `--save`, `pmsave`, and `pmlog save` also land in this director
 ```
 promptmol/
 ├── __init__.py     # plugin entry point, command handlers
-├── llm.py          # LLM client (LM Studio / OpenAI / Anthropic)
+├── llm.py          # LLM client (LM Studio / OpenAI / Anthropic), streaming
 ├── config.py       # config load/save (~/.promptmol.json)
 ├── session.py      # conversation history and session log
-├── state.py        # PyMOL scene state inspector
+├── state.py        # PyMOL scene state inspector (chains, ligands, atoms)
+├── utils.py        # shared code execution and response parsing utilities
 └── prompts.py      # system prompt with PyMOL API reference
 ```
 
