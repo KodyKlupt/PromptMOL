@@ -1,5 +1,7 @@
 # PromptMol
 
+![PromptMol demo](demo.gif)
+
 A PyMOL plugin that lets you control PyMOL with natural language. Type plain-English prompts directly in the PyMOL command line and have an LLM translate them into PyMOL commands that execute automatically.
 
 ```
