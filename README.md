@@ -2,7 +2,7 @@
 
 ![PromptMol demo](demo.gif)
 
-A PyMOL plugin that lets you control PyMOL with natural language. Type plain-English prompts directly in the PyMOL command line and have an LLM translate them into PyMOL commands that execute automatically.
+A PyMOL plugin that lets you control PyMOL with natural language. Type plain language prompts directly in the PyMOL command line and have an LLM translate them into PyMOL commands that execute automatically.
 
 ```
 PyMOL> pm fetch 1hpv and show as cartoon colored by chain
@@ -10,25 +10,34 @@ PyMOL> pm make the ligand yellow sticks with a transparent surface
 PyMOL> pm render a publication quality PNG with a white background
 ```
 
-Supports [LM Studio](https://lmstudio.ai) (local, no API key needed), OpenAI, and Anthropic — switchable at any time with a single command.
+And other commands with increasing complexity...
+
+```
+PyMOL> pm what residues are within 4 angstroms of the ligand?
+PyMOL> pm measure the distance between residue 50 CA and residue 100 CA
+PyMOL> pm calculate the molecular weight of the protein
+PyMOL> pm export a CSV containing the B-factors 
+```
+
+Supports [LM Studio](https://lmstudio.ai) (local, no API key needed), OpenAI, and Anthropic, switchable at any time with a single command.
 
 ---
 
 ## Features
 
-- **Natural language → PyMOL commands** — describe what you want, PromptMol generates and executes the API calls
-- **Multi-turn conversation** — the LLM remembers prior context within a session, so follow-up commands just work
-- **Three LLM backends** — LM Studio (local), OpenAI, Anthropic; switch with `pmcfg set backend`
-- **Dry-run mode** — preview generated commands before executing with `--dry`
-- **Script saving** — save any generated script as a standalone `.py` file with `--save` or `pmsave`
-- **Session log** — save the full session as a replayable annotated script with `pmlog save`
-- **Output directory** — route all saved files (PNGs, CSVs, etc.) to a folder with `--outdir` or `pmcfg set output_dir`
+- **Natural language → PyMOL commands** - describe what you want, PromptMOL generates and executes the API calls
+- **Multi-turn conversation** - the LLM remembers prior context within a session, so follow-up commands just work
+- **Three LLM backends** - LM Studio (local), OpenAI, Anthropic; switch with `pmcfg set backend`
+- **Dry-run mode** - preview generated commands before executing with `--dry`
+- **Script saving** - save any generated script as a standalone `.py` file with `--save` or `pmsave`
+- **Session log** - save the full session as a replayable annotated script with `pmlog save`
+- **Output directory** - route all saved files (PNGs, CSVs, etc.) to a folder with `--outdir` or `pmcfg set output_dir`
 
 ---
 
 ## Requirements
 
-- [PyMOL](https://pymol.org) (open-source or commercial) — tested with open-source PyMOL via conda
+- [PyMOL](https://pymol.org) (open-source) - tested with open-source PyMOL via conda
 - Python 3.8+
 - One of:
   - [LM Studio](https://lmstudio.ai) running locally (recommended for getting started, no API key needed)
@@ -77,10 +86,10 @@ pm help
 
 ### Using LM Studio (local, no API key)
 
-1. Download and open [LM Studio](https://lmstudio.ai)
+1. Download and open [LM Studio](https://lmstudio.ai) 
 2. Load any chat model
 3. Start the local server (default port: 1234)
-4. Open PyMOL — PromptMol defaults to LM Studio, no configuration needed
+4. Open PyMOL and PromptMol defaults to LM Studio, no configuration needed
 
 ```
 PyMOL> pm fetch 1hpv
@@ -127,7 +136,7 @@ pm export a CSV containing the B-factors for all alpha carbons
 
 ## Command Reference
 
-### `pm` — main command
+### `pm` - main command
 
 ```
 pm <prompt>
@@ -143,7 +152,7 @@ pm help                              show usage
 If generated code raises an error, PromptMol automatically sends the error
 back to the LLM and retries once.
 
-### `pmundo` — undo last command
+### `pmundo` - undo last command
 
 ```
 pmundo                               restore scene to before the last pm command
@@ -151,7 +160,7 @@ pmundo                               restore scene to before the last pm command
 
 The scene state is snapshotted automatically before each execution.
 
-### `pmcfg` — configuration
+### `pmcfg` - configuration
 
 ```
 pmcfg show                           print current config
@@ -169,20 +178,20 @@ pmcfg set max_history 20             number of conversation turns to keep
 
 Config is saved to `~/.promptmol.json`.
 
-### `pmreset` — clear session
+### `pmreset` - clear session
 
 ```
 pmreset                              clear conversation history, log, and undo state
 ```
 
-### `pmsave` — save last script
+### `pmsave` - save last script
 
 ```
 pmsave                               save last generated script (auto-named)
 pmsave filename.py                   save with a specific name
 ```
 
-### `pmlog` — session log
+### `pmlog` - session log
 
 ```
 pmlog show                           print full session log to console
@@ -216,25 +225,23 @@ Scripts saved by `--save`, `pmsave`, and `pmlog save` also land in this director
 
 ## Tips
 
-- **Give context**: `pm the ligand is called LIG — show it as sticks` works better than assuming the LLM knows your structure
+- **Give context**: `pm the ligand is called LIG - show it as sticks` works better than assuming the LLM knows your structure
 - **Follow-up naturally**: after loading a structure, subsequent commands can reference it without reloading
 - **Use `--dry` first** for complex requests to review commands before they run
 - **Replay sessions**: `pmlog save` produces a standalone script you can share or re-run
 
 ---
 
-## Project Structure
+## Citation
 
-```
-promptmol/
-├── __init__.py     # plugin entry point, command handlers
-├── llm.py          # LLM client (LM Studio / OpenAI / Anthropic), streaming
-├── config.py       # config load/save (~/.promptmol.json)
-├── session.py      # conversation history and session log
-├── state.py        # PyMOL scene state inspector (chains, ligands, atoms)
-├── utils.py        # shared code execution and response parsing utilities
-└── prompts.py      # system prompt with PyMOL API reference
-```
+@misc{PromptMOL,
+    author={Kody A. Klupt},
+    title={PromptMOL: Controlling PyMOL with Natural Language},
+    year={2026},
+    url={https://github.com/KodyKlupt/PromptMOL},
 
 ---
 
+## Use of AI
+
+This project was developed with the assistance of Claude Code.
