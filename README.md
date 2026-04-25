@@ -1,4 +1,4 @@
-# PromptMol
+# PromptMOL
 
 ![PromptMol demo](demo.gif)
 
