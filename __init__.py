@@ -44,6 +44,7 @@ def __init_plugin__(app=None):
         _print_setup_wizard(first_run=True)
     else:
         print("PromptMol loaded. Type 'pm help' for usage or 'pmsetup' to reconfigure.")
+        print("For documentation visit github.com/kodyklupt/promptmol\n")
 
 
 # ── pm command ────────────────────────────────────────────────────────────────
@@ -342,7 +343,10 @@ def _print_setup_wizard(first_run: bool = False) -> None:
         print("")
         print("  ╔══════════════════════════════════════════════════╗")
         print("  ║           Welcome to PromptMol!                  ║")
-        print("  ║  Natural-language control for PyMOL              ║")
+        print("  ║     Natural-language control for PyMOL           ║")
+        print("  ║    https://github.com/kodyklupt/promptmol        ║")
+        print("  ║                                                  ║")   
+        print("  ║        Kody Klupt            2026                ║")
         print("  ╚══════════════════════════════════════════════════╝")
         print("")
         print("  First-time setup — choose your LLM backend:")
