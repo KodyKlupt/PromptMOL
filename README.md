@@ -107,6 +107,22 @@ PyMOL> pmcfg set backend anthropic
 PyMOL> pmcfg set api_key sk-ant-...
 ```
 
+### Using Google Gemini
+
+```
+PyMOL> pmsetup google <your-api-key>
+```
+
+Or set manually:
+
+```
+PyMOL> pmcfg set backend google
+PyMOL> pmcfg set google_api_key AIza...
+PyMOL> pmcfg set google_model gemini-2.0-flash
+```
+
+Get a free API key at [aistudio.google.com/apikey](https://aistudio.google.com/apikey). The free tier includes generous rate limits suitable for PyMOL use.
+
 ---
 
 ## Examples
@@ -171,7 +187,9 @@ pmcfg set api_key <key>              set API key (OpenAI or Anthropic)
 pmcfg set model <name>               set LM Studio model name
 pmcfg set openai_model gpt-4o        set OpenAI model
 pmcfg set anthropic_model claude-sonnet-4-6
+pmcfg set google_model gemini-2.5-pro
 pmcfg set base_url http://localhost:1234/v1   LM Studio server URL
+pmcfg set google_api_key AIza...             set Google API key
 pmcfg set output_dir ~/my/figures    persistent output folder
 pmcfg set max_history 20             number of conversation turns to keep
 ```

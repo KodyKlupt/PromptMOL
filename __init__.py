@@ -331,7 +331,21 @@ def _pmsetup(*args, **kwargs):
             print("  Get a key at: https://console.anthropic.com/settings/keys\n")
         return
 
-    print(f"  Unknown backend '{backend}'. Choose: lmstudio, openai, anthropic")
+    if backend == "google":
+        api_key = tokens[1] if len(tokens) > 1 else ""
+        config.save_config("backend", "google")
+        if api_key:
+            config.save_config("google_api_key", api_key)
+            print("\n  PromptMol: backend set to Google Gemini, API key saved.")
+            print(f"  Model: {config.get('google_model')}  (pmcfg set google_model <name>)\n")
+            print("  Setup complete! Try:  pm fetch 1hpv and show as cartoon colored by chain")
+        else:
+            print("\n  PromptMol: backend set to Google Gemini.")
+            print("  Enter your API key:  pmsetup google <your-api-key>")
+            print("  Get a key at: https://aistudio.google.com/apikey\n")
+        return
+
+    print(f"  Unknown backend '{backend}'. Choose: lmstudio, openai, anthropic, google")
     _print_setup_wizard(first_run=False)
 
 
@@ -365,6 +379,9 @@ def _print_setup_wizard(first_run: bool = False) -> None:
     print("  3. Anthropic  — Claude, requires API key")
     print("       pmsetup anthropic <your-api-key>")
     print("")
+    print("  4. Google  — Gemini, requires API key (free tier available)")
+    print("       pmsetup google <your-api-key>")
+    print("")
     print("  ─────────────────────────────────────────────────────")
     print("  Type 'pmsetup' to return here at any time.")
     print("  Type 'pmcfg show' to view all current settings.\n")
@@ -387,6 +404,7 @@ def _print_help() -> None:
         "  pmsetup lmstudio                   switch to LM Studio (local)\n"
         "  pmsetup openai <key>               switch to OpenAI + set API key\n"
         "  pmsetup anthropic <key>            switch to Anthropic + set API key\n"
+        "  pmsetup google <key>               switch to Google Gemini + set API key\n"
         "\n"
         "  pmcfg show                         show current config\n"
         "  pmcfg set output_dir /path         set persistent output folder\n"
@@ -410,7 +428,7 @@ def _pmcfg(*args, **kwargs):
         cfg = config.load_config()
         print("PromptMol config:")
         for k, v in cfg.items():
-            display = "***" if k == "api_key" and v else v
+            display = "***" if k in ("api_key", "google_api_key") and v else v
             print(f"  {k} = {display}")
         return
 
@@ -421,13 +439,14 @@ def _pmcfg(*args, **kwargs):
         key, value = tokens[1], " ".join(tokens[2:])
         valid_keys = {
             "backend", "model", "api_key", "base_url", "max_history",
-            "anthropic_model", "openai_model", "output_dir",
+            "anthropic_model", "openai_model", "google_model", "google_api_key",
+            "output_dir",
         }
         if key not in valid_keys:
             print(f"Unknown config key '{key}'. Valid keys: {', '.join(sorted(valid_keys))}")
             return
-        if key == "backend" and value not in ("lmstudio", "openai", "anthropic"):
-            print("backend must be one of: lmstudio, openai, anthropic")
+        if key == "backend" and value not in ("lmstudio", "openai", "anthropic", "google"):
+            print("backend must be one of: lmstudio, openai, anthropic, google")
             return
         config.save_config(key, value)
         if key == "max_history":

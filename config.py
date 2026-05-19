@@ -11,6 +11,8 @@ DEFAULTS = {
     "max_history": 20,
     "anthropic_model": "claude-sonnet-4-6",
     "openai_model": "gpt-4o",
+    "google_model": "gemini-2.0-flash",
+    "google_api_key": "",
     "output_dir": "",   # empty = use current working directory
 }
 

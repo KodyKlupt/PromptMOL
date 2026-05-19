@@ -13,6 +13,7 @@ setup(
     install_requires=[
         "openai>=1.0.0",
         "anthropic>=0.20.0",
+        "google-genai>=1.0.0",
     ],
     classifiers=[
         "Programming Language :: Python :: 3",

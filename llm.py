@@ -22,8 +22,10 @@ def chat(
         return _openai_chat(messages, cfg, on_token=on_token, model_override=model_override)
     elif backend == "anthropic":
         return _anthropic_chat(messages, cfg, on_token=on_token, model_override=model_override)
+    elif backend == "google":
+        return _google_chat(messages, cfg, on_token=on_token, model_override=model_override)
     else:
-        raise RuntimeError(f"Unknown backend '{backend}'. Use: lmstudio, openai, anthropic")
+        raise RuntimeError(f"Unknown backend '{backend}'. Use: lmstudio, openai, anthropic, google")
 
 
 def _emit(token: str, on_token: Optional[Callable]) -> None:
@@ -138,3 +140,65 @@ def _anthropic_chat(
         return "".join(full_text)
     except Exception as e:
         raise RuntimeError(f"LLM call failed (anthropic): {e}")
+
+
+def _google_chat(
+    messages: List[Dict[str, str]],
+    cfg: dict,
+    on_token: Optional[Callable] = None,
+    model_override: Optional[str] = None,
+) -> str:
+    try:
+        from google import genai
+        from google.genai import types as gtypes
+    except ImportError:
+        raise RuntimeError(
+            "google-genai package not installed. Run: pip install google-genai"
+        )
+
+    api_key = cfg.get("google_api_key", "")
+    if not api_key:
+        raise RuntimeError(
+            "Google API key not set. Run: pmcfg set google_api_key <your-key>\n"
+            "Get a key at: https://aistudio.google.com/apikey"
+        )
+
+    model = model_override or cfg.get("google_model", "gemini-2.0-flash")
+
+    # Separate system message — Google takes it as system_instruction
+    system_instruction = ""
+    contents: List[Dict] = []
+    for msg in messages:
+        if msg["role"] == "system":
+            system_instruction = msg["content"]
+        else:
+            # Google uses "user" / "model" (not "assistant")
+            role = "model" if msg["role"] == "assistant" else "user"
+            contents.append({"role": role, "parts": [{"text": msg["content"]}]})
+
+    if not contents:
+        raise RuntimeError("No user messages to send.")
+
+    gen_config = gtypes.GenerateContentConfig(
+        temperature=0.1,
+        max_output_tokens=2048,
+        system_instruction=system_instruction or None,
+    )
+
+    try:
+        client = genai.Client(api_key=api_key)
+        full_text: List[str] = []
+        for chunk in client.models.generate_content_stream(
+            model=model,
+            contents=contents,
+            config=gen_config,
+        ):
+            if chunk.text:
+                full_text.append(chunk.text)
+                _emit(chunk.text, on_token)
+        if not on_token:
+            sys.stdout.write("\n")
+            sys.stdout.flush()
+        return "".join(full_text)
+    except Exception as e:
+        raise RuntimeError(f"LLM call failed (google): {e}")
