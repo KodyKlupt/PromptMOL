@@ -1,5 +1,7 @@
 # PromptMOL
 
+## Now with RAG for improved performance with local models.
+
 ![PromptMol demo](demo.gif)
 
 A PyMOL plugin that lets you control PyMOL with natural language. Type plain language prompts directly in the PyMOL command line and have an LLM translate them into PyMOL commands that execute automatically.
@@ -141,12 +143,12 @@ When using LM Studio, PromptMol automatically retrieves relevant PyMOL documenta
 
 ### How it works
 
-1. **Corpus** — `docs/` contains ~180 markdown files: 10 hand-curated reference files covering common patterns, plus 169 pages scraped from the [PyMOL Wiki](https://pymolwiki.org) command reference. Together they index to ~760 semantic chunks.
-2. **Embedding** — chunks are embedded with [`all-MiniLM-L6-v2`](https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2) (80 MB, runs locally, no API key).
+1. `docs/` contains markdown files: reference files covering common patterns, plus pagesscraped from the [PyMOL Wiki](https://pymolwiki.org) command reference. 
+2. **Embedding** — chunks are embedded with [`all-MiniLM-L6-v2`](https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2) (runs locally, no API key).
 3. **Retrieval** — at query time, your prompt is embedded and the top-3 most semantically similar chunks are fetched from the ChromaDB vector store at `~/.promptmol_rag/`.
 4. **Injection** — retrieved chunks are appended to the system prompt under a `## Retrieved PyMOL reference` header, giving the model grounded syntax to work from.
 
-RAG is **only active for the LM Studio backend** — cloud models (GPT-4, Claude, Gemini) already have strong PyMOL knowledge and don't need it.
+RAG is **only active for the LM Studio backend** 
 
 ### Setup
 
@@ -156,6 +158,7 @@ pip install sentence-transformers chromadb
 
 # Optional: re-scrape the PyMOL wiki to refresh docs
 python scripts/scrape_pymol_wiki.py
+# Optional: can also scrape other wiki categories
 
 # Then rebuild the index inside PyMOL
 pmrag build
