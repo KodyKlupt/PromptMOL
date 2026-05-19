@@ -14,6 +14,8 @@ DEFAULTS = {
     "google_model": "gemini-2.0-flash",
     "google_api_key": "",
     "output_dir": "",   # empty = use current working directory
+    "rag_enabled": True,
+    "rag_k": 3,
 }
 
 
@@ -29,8 +31,10 @@ def load_config() -> dict:
 
 def save_config(key: str, value: str) -> None:
     config = load_config()
-    if key == "max_history":
+    if key in ("max_history", "rag_k"):
         config[key] = int(value)
+    elif key == "rag_enabled":
+        config[key] = str(value).lower() not in ("false", "0", "no", "off")
     else:
         config[key] = value
     with open(CONFIG_PATH, "w") as f:

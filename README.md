@@ -19,7 +19,7 @@ PyMOL> pm calculate the molecular weight of the protein
 PyMOL> pm export a CSV containing the B-factors 
 ```
 
-Supports [LM Studio](https://lmstudio.ai) (local, no API key needed), OpenAI, and Anthropic, switchable at any time with a single command.
+Supports [LM Studio](https://lmstudio.ai) (local, no API key needed), OpenAI, Anthropic, and Google Gemini, switchable at any time with a single command.
 
 ---
 
@@ -27,7 +27,8 @@ Supports [LM Studio](https://lmstudio.ai) (local, no API key needed), OpenAI, an
 
 - **Natural language → PyMOL commands** - describe what you want, PromptMOL generates and executes the API calls
 - **Multi-turn conversation** - the LLM remembers prior context within a session, so follow-up commands just work
-- **Three LLM backends** - LM Studio (local), OpenAI, Anthropic; switch with `pmcfg set backend`
+- **Four LLM backends** - LM Studio (local), OpenAI, Anthropic, Google Gemini; switch with `pmcfg set backend`
+- **RAG for local models** - automatically retrieves relevant PyMOL documentation and injects it into the prompt, improving accuracy for rare commands when using LM Studio
 - **Dry-run mode** - preview generated commands before executing with `--dry`
 - **Script saving** - save any generated script as a standalone `.py` file with `--save` or `pmsave`
 - **Session log** - save the full session as a replayable annotated script with `pmlog save`
@@ -37,12 +38,13 @@ Supports [LM Studio](https://lmstudio.ai) (local, no API key needed), OpenAI, an
 
 ## Requirements
 
-- [PyMOL](https://pymol.org) (open-source) - tested with open-source PyMOL via conda
+- [PyMOL](https://pymol.org) (open-source) — tested with open-source PyMOL via conda
 - Python 3.8+
 - One of:
-  - [LM Studio](https://lmstudio.ai) running locally (recommended for getting started, no API key needed)
+  - [LM Studio](https://lmstudio.ai) running locally (recommended, no API key needed)
   - An OpenAI API key
   - An Anthropic API key
+  - A Google API key (free tier available)
 
 ---
 
@@ -57,7 +59,13 @@ conda activate pymol
 pip install git+https://github.com/KodyKlupt/PromptMOL.git
 ```
 
-This installs PromptMol and its dependencies (`openai`, `anthropic`) in one step.
+This installs PromptMol and its core dependencies (`openai`, `anthropic`) in one step.
+
+**For RAG support with LM Studio** (strongly recommended — improves local model accuracy), install the additional dependencies:
+
+```bash
+pip install sentence-transformers chromadb
+```
 
 To update to the latest version later:
 
@@ -86,16 +94,18 @@ pm help
 
 ### Using LM Studio (local, no API key)
 
-1. Download and open [LM Studio](https://lmstudio.ai) 
+1. Download and open [LM Studio](https://lmstudio.ai)
 2. Load any chat model
 3. Start the local server (default port: 1234)
-4. Open PyMOL and PromptMol defaults to LM Studio, no configuration needed
+4. Open PyMOL — PromptMol defaults to LM Studio, no configuration needed
 
 ```
 PyMOL> pm fetch 1hpv
 PyMOL> pm show it as cartoon colored by secondary structure
 PyMOL> pm make the ligand sticks with yellow carbons
 ```
+
+**First run with RAG:** On the first `pm` command, PromptMol will automatically download the embedding model (~80 MB, one-time) and build a local vector index of PyMOL documentation. This takes about 30 seconds and happens silently in the background. All subsequent calls are instant.
 
 ### Using OpenAI or Anthropic
 
@@ -122,6 +132,45 @@ PyMOL> pmcfg set google_model gemini-2.0-flash
 ```
 
 Get a free API key at [aistudio.google.com/apikey](https://aistudio.google.com/apikey). The free tier includes generous rate limits suitable for PyMOL use.
+
+---
+
+## RAG (Retrieval-Augmented Generation) for Local Models
+
+When using LM Studio, PromptMol automatically retrieves relevant PyMOL documentation and injects it into the system prompt before each call. This aims to improve accuracy for commands that local models tend to get wrong — rare API signatures, tricky selection syntax, non-obvious argument orders.
+
+### How it works
+
+1. **Corpus** — `docs/` contains ~180 markdown files: 10 hand-curated reference files covering common patterns, plus 169 pages scraped from the [PyMOL Wiki](https://pymolwiki.org) command reference. Together they index to ~760 semantic chunks.
+2. **Embedding** — chunks are embedded with [`all-MiniLM-L6-v2`](https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2) (80 MB, runs locally, no API key).
+3. **Retrieval** — at query time, your prompt is embedded and the top-3 most semantically similar chunks are fetched from the ChromaDB vector store at `~/.promptmol_rag/`.
+4. **Injection** — retrieved chunks are appended to the system prompt under a `## Retrieved PyMOL reference` header, giving the model grounded syntax to work from.
+
+RAG is **only active for the LM Studio backend** — cloud models (GPT-4, Claude, Gemini) already have strong PyMOL knowledge and don't need it.
+
+### Setup
+
+```bash
+# Install RAG dependencies (one-time)
+pip install sentence-transformers chromadb
+
+# Optional: re-scrape the PyMOL wiki to refresh docs
+python scripts/scrape_pymol_wiki.py
+
+# Then rebuild the index inside PyMOL
+pmrag build
+```
+
+### Controls
+
+```
+pmrag status          show index state (chunk count, paths, enabled/disabled)
+pmrag build           (re)build the vector index from docs/
+pmrag on / off        enable or disable RAG without removing the index
+pmcfg set rag_k 5     retrieve 5 chunks per query instead of 3 (default)
+```
+
+The index persists at `~/.promptmol_rag/` across PyMOL sessions. It is only rebuilt when you explicitly run `pmrag build` or when the index is empty (first run).
 
 ---
 
@@ -222,6 +271,15 @@ pmlog export session.json            export with a specific name
 The session log is a valid Python script with each step labeled by timestamp
 and prompt, so it can be replayed directly in PyMOL. The JSON export is useful
 for programmatic analysis or sharing structured session data.
+
+### `pmrag` - RAG index management *(LM Studio only)*
+
+```
+pmrag status          show whether RAG is enabled, indexed chunk count, and paths
+pmrag build           (re)build the vector index from docs/
+pmrag on              enable RAG (default)
+pmrag off             disable RAG for this session
+```
 
 ---
 

@@ -15,6 +15,9 @@ Commands registered in the PyMOL command line:
   pmlog show                                print session log to console
   pmlog save [filename]                     save full session log as .py script
   pmlog export [filename]                   export session log as JSON
+  pmrag status                              show RAG index status
+  pmrag build                              (re)build the PyMOL doc index
+  pmrag on | off                            enable or disable RAG
 """
 
 import os
@@ -39,6 +42,7 @@ def __init_plugin__(app=None):
     cmd.extend("pmlog",   _pmlog)
     cmd.extend("pmsetup", _pmsetup)
     cmd.extend("pmundo",  _pmundo)
+    cmd.extend("pmrag",   _pmrag)
 
     if not os.path.exists(config.CONFIG_PATH):
         _print_setup_wizard(first_run=True)
@@ -140,7 +144,17 @@ def _run_prompt(
         f"\n\nUser request: {prompt}"
     )
 
-    messages = [{"role": "system", "content": SYSTEM_PROMPT}]
+    # RAG: augment system prompt with relevant doc chunks for local models
+    system_prompt = SYSTEM_PROMPT
+    if cfg.get("backend") == "lmstudio" and cfg.get("rag_enabled", True):
+        from . import rag
+        if rag.ensure_index():
+            k = int(cfg.get("rag_k", 3))
+            context_block = rag.get_context_block(prompt, k=k)
+            if context_block:
+                system_prompt = SYSTEM_PROMPT + context_block
+
+    messages = [{"role": "system", "content": system_prompt}]
     messages += sess.get_messages()
     messages.append({"role": "user", "content": user_msg})
 
@@ -414,7 +428,50 @@ def _print_help() -> None:
         "  pmlog show                         print session log to console\n"
         "  pmlog save [file.py]               save full session log as runnable script\n"
         "  pmlog export [file.json]           export session log as JSON\n"
+        "\n"
+        "  pmrag status                       show RAG index status\n"
+        "  pmrag build                        (re)build PyMOL doc index\n"
+        "  pmrag on / off                     enable or disable RAG\n"
     )
+
+
+# ── pmrag ─────────────────────────────────────────────────────────────────────
+
+def _pmrag(*args, **kwargs):
+    """pmrag build | pmrag status | pmrag on | pmrag off"""
+    from . import config, rag as _rag
+
+    tokens = " ".join(str(a) for a in args).split()
+    sub = tokens[0].lower() if tokens else "status"
+
+    if sub == "build":
+        print("PromptMol RAG: building index…")
+        try:
+            n = _rag.build_index(force=True)
+            print(f"PromptMol RAG: indexed {n} chunks. Ready.")
+        except RuntimeError as e:
+            print(f"PromptMol RAG error: {e}")
+
+    elif sub == "status":
+        enabled = config.get("rag_enabled")
+        k = config.get("rag_k")
+        indexed = _rag.is_indexed()
+        print(f"  RAG enabled : {enabled}")
+        print(f"  Indexed     : {indexed}")
+        print(f"  Top-k chunks: {k}")
+        print(f"  Docs dir    : {_rag.DOCS_DIR}")
+        print(f"  Index dir   : {_rag.CHROMA_DIR}")
+
+    elif sub == "on":
+        config.save_config("rag_enabled", "true")
+        print("PromptMol RAG: enabled.")
+
+    elif sub == "off":
+        config.save_config("rag_enabled", "false")
+        print("PromptMol RAG: disabled.")
+
+    else:
+        print("Usage: pmrag build | pmrag status | pmrag on | pmrag off")
 
 
 # ── pmcfg ─────────────────────────────────────────────────────────────────────
@@ -440,7 +497,7 @@ def _pmcfg(*args, **kwargs):
         valid_keys = {
             "backend", "model", "api_key", "base_url", "max_history",
             "anthropic_model", "openai_model", "google_model", "google_api_key",
-            "output_dir",
+            "output_dir", "rag_enabled", "rag_k",
         }
         if key not in valid_keys:
             print(f"Unknown config key '{key}'. Valid keys: {', '.join(sorted(valid_keys))}")

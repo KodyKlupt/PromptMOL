@@ -65,11 +65,14 @@ def _openai_chat(
 
     try:
         client = OpenAI(base_url=base_url, api_key=api_key)
+        # 8192 gives thinking models (Gemma 4, Qwen3, DeepSeek-R1, etc.)
+        # enough headroom to finish reasoning and still emit a response.
+        # Non-thinking models stop at their natural end regardless.
         stream = client.chat.completions.create(
             model=model,
             messages=messages,
             temperature=0.1,
-            max_tokens=2048,
+            max_tokens=8192,
             stream=True,
         )
         chunks: List[str] = []
